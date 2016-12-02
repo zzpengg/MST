@@ -49,7 +49,7 @@ int find(struct subset subsets[], int i)
     //printf("parent[%d] = %d\n",i,subsets[i].parent);
     return subsets[i].parent;
 }
- 
+int number;
 // A function that does union of two sets of x and y
 // (uses union by rank)
 void Union(struct subset subsets[], int x, int y)
@@ -57,28 +57,53 @@ void Union(struct subset subsets[], int x, int y)
     int xroot = find(subsets, x);
     int yroot = find(subsets, y);
  
+    //printf("number = %d",number);
     // Attach smaller rank tree under root of high rank tree
     // (Union by Rank)
     if (subsets[xroot].rank < subsets[yroot].rank){
-        subsets[xroot].parent = yroot;
+        int temp = subsets[xroot].parent;
+        for(int i=0;i<number;i++)
+        {
+            if(subsets[i].parent == temp){
+                //printf("ysubsets[%d].parent = %d\n",i,yroot);
+                subsets[i].parent = yroot;
+            }
+        }            
         //printf("subsets.parent = %d\n",yroot);
     }
     else if (subsets[xroot].rank > subsets[yroot].rank){
-        subsets[yroot].parent = xroot;
-        //printf("subsets.parent = %d\n",xroot);
+        int temp = subsets[yroot].parent;
+        for(int i=0;i<number;i++)
+        {
+            if(subsets[i].parent == temp)
+            {
+                //printf("xsubsets[%d].parent = %d\n",i,xroot);
+                subsets[i].parent = xroot;
+            }
+        }
+        
     }
  
     // If ranks are same, then make one as root and increment
     // its rank by one
     else
     {
-        subsets[yroot].parent = xroot;
+        int temp = subsets[yroot].parent;
+        for(int i=0;i<number;i++)
+        {
+            //printf("front = %d\t",subsets[i].parent);
+            if(temp == subsets[i].parent){
+                //printf("xsubsets[%d].parent = %d\n",i,xroot);
+                subsets[i].parent = xroot;
+            }
+        }        
         //printf("subsets.parent = %d\n",xroot);
         subsets[xroot].rank++;
     }
 }
  
 // The main function to check whether a given graph contains cycle or not
+
 int isCycle( struct Graph* graph )
 {
     int V = graph->V;
@@ -111,6 +136,37 @@ int isCycle( struct Graph* graph )
     }
     return 0;
 }
+
+struct subset* isSet( struct Graph* graph )
+{
+    int V = graph->V;
+    int E = graph->E;
+ 
+    // Allocate memory for creating V sets
+    struct subset *subsets =
+        (struct subset*) malloc( V * sizeof(struct subset) );
+ 
+    for (int v = 0; v < V; ++v)
+    {
+        subsets[v].parent = v;
+        subsets[v].rank = 0;
+    }
+ 
+    // Iterate through all edges of graph, find sets of both
+    // vertices of every edge, if sets are same, then there is
+    // cycle in graph.
+    for(int e = 0; e < E; ++e)
+    {
+        int x = find(subsets, graph->edge[e].src);
+        //printf("graph->edge[%d].src = %d\tx = %d\t",e,graph->edge[e].src,x);
+        int y = find(subsets, graph->edge[e].dest);
+        //printf("graph->edge[%d].dest = %d\ty = %d\n",e,graph->edge[e].dest,y);
+ 
+        Union(subsets, x, y);
+    }
+    return subsets;
+}
+
 int v1[100],v2[100];
 float w[100];
 int partition(int ,int);
@@ -169,7 +225,7 @@ int partition(int l, int r) {
 // Driver program to test above functions
 int main()
 {
-	int number=0,count=0;
+	int count=0;
     FILE *fin;
 	fin=fopen("test2.txt", "r");
     fscanf(fin,"%d", &number);
@@ -205,14 +261,33 @@ int main()
     	        c++;        
             }
         }
+        struct subset *subsets = isSet(graph[z-1]);
+        /*printf("%d\t",subsets[0].parent);
+        printf("%d\t",subsets[1].parent);
+        printf("%d\t",subsets[2].parent);
+        printf("%d\t",subsets[3].parent);
+        printf("%d\t",subsets[4].parent);
+        printf("%d\t",subsets[5].parent);          */  
 		if (isCycle(graph[z-1]))
         {
             printf("step%d : \n",z);
             for(int k=0;k<c;k++){
                 printf("(%d,%d)\t",graph[z-1]->edge[k].src+1,graph[z-1]->edge[k].dest+1);
+                printf( "Cost : %0.2f\n", graph[z-1]->edge[k].weight);
             }
-            printf( "Cost : %0.2f\n", graph[z-1]->edge[c-1].weight);
-        	printf( "Graph contains cycle\n\n" );        	                        
+            
+            printf("set : \n");
+            for(int k=0;k<number;k++){
+                printf("[");
+                for(int p=0;p<number;p++){
+                    if(subsets[p].parent==k){
+                        printf("%d",p+1);
+                    }
+                }
+                printf("]\t");
+            }
+            
+        	printf( "\nGraph contains cycle\n\n" );        	                        
         	v1[z-1] = -1;
         	v2[z-1] = -1;
         	w[z-1] = -1;
@@ -222,9 +297,21 @@ int main()
             printf("step%d : \n",z);
             for(int k=0;k<c;k++){
                 printf("(%d,%d)\t",graph[z-1]->edge[k].src+1,graph[z-1]->edge[k].dest+1);
+                printf( "Cost : %0.2f\n", graph[z-1]->edge[k].weight);
             }
-            printf( "Cost : %0.2f\n", graph[z-1]->edge[c-1].weight);
-        	printf( "Graph doesn't contain cycle\n\n" );
+            
+            printf("set : \n");
+            for(int k=0;k<number;k++){
+                printf("[");
+                for(int p=0;p<number;p++){
+                    if(subsets[p].parent==k){
+                        printf("%d",p+1);
+                    }
+                }
+                printf("]\t");
+            }
+            
+        	printf( "\nGraph doesn't contain cycle\n\n" );
         	edg++;
         }
     }
